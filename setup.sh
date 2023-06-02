@@ -1,0 +1,21 @@
+pip install -e .
+pip install -e ".[models]"
+pip install -e ".[datasets]"
+pip install -e ".[jax]"
+pip install -e ".[tensorflow]"
+pip install -e ".[tf-nightly]"
+pip install -e ".[test]"
+pip install -e ".[torch]"
+pip install -e ".[retinopathy]"
+pip install -e "git+https://github.com/google/uncertainty-baselines.git#egg=uncertainty_baselines"
+
+# /opt/conda/envs/myenv/bin/pip install -e .
+# /opt/conda/envs/myenv/bin/pip install -e ".[models]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[datasets]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[jax]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[tensorflow]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[tf-nightly]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[test]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[torch]"
+# /opt/conda/envs/myenv/bin/pip install -e ".[retinopathy]"
+# /opt/conda/envs/myenv/bin/pip install -e "git+https://github.com/google/uncertainty-baselines.git#egg=uncertainty_baselines"

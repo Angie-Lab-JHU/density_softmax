@@ -1,0 +1,19 @@
+{
+    "exp_name": "CIFAR10",
+    "algorithm": "ERM",
+    "model": "wide_resnet_28_10",
+    "feature_dim": 640,
+    "dataset": "CIFAR10",
+    "seed_value": 1,
+    "val_size": 0,
+    "train_path": "/home/ubuntu/datasets/CIFAR-10/raw/",
+    "test_paths": ["/home/ubuntu/datasets/CIFAR-10/raw/"],
+    "train_meta_filenames": "/home/ubuntu/datasets/CIFAR-10/metadata/train_kfold.txt",
+    "test_meta_filenames": "/home/ubuntu/datasets/CIFAR-10/metadata/test_kfold.txt",
+    "n_classes": 10,
+    "epochs": 200,
+    "decay_interations": [60, 120, 160],
+    "learning_rate": 0.1,
+    "batch_size": 128,
+    "step_eval": 1
+}
