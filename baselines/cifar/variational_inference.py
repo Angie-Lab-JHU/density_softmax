@@ -43,7 +43,7 @@ flags.DEFINE_integer('kl_annealing_epochs', 200,
 flags.DEFINE_float('prior_stddev', 0.1, 'Fixed stddev for weight prior.')
 flags.DEFINE_float('stddev_init', 1e-3,
                    'Initialization of posterior standard deviation parameters.')
-flags.DEFINE_integer('num_eval_samples', 4,
+flags.DEFINE_integer('num_eval_samples', 5,
                      'Number of samples per example during evaluation. Only '
                      'used for corrupted predicitons.')
 # Redefining default values

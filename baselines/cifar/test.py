@@ -38,7 +38,7 @@ import tensorflow_probability as tfp
 import pickle
 from tensorflow import keras
 from tensorflow.keras import regularizers
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 flags.DEFINE_float('label_smoothing', 0., 'Label smoothing parameter in [0,1].')
 flags.register_validator('label_smoothing',
@@ -98,7 +98,8 @@ flags.DEFINE_string('corruption_type', None, 'corruption_type')
 flags.DEFINE_integer('severity', None, 'Number')
 
 FLAGS = flags.FLAGS
-FLAGS.dataset = "cifar100"
+FLAGS.dataset = "cifar10"
+# FLAGS.dataset = "cifar100"
 
 def _extract_hyperparameter_dictionary():
 	"""Create the dictionary of hyperparameters from FLAGS."""
@@ -211,7 +212,8 @@ class RealNVP(keras.Model):
 
 #Cifar-10 -0.55 -0.45
 #Cifar-100 -0.4 -0.3
-def rescale(X, x_min, x_max, y_min = -0.4, y_max = -0.3):
+# def rescale(X, x_min, x_max, y_min = -0.4, y_max = -0.3):
+def rescale(X, x_min, x_max, y_min = -0.55, y_max = -0.45):
   X = (X - x_min) / (x_max - x_min)
   X = X * (y_max - y_min)
   X = X + y_min
@@ -261,17 +263,16 @@ def main(argv):
 			drop_remainder=FLAGS.drop_remainder_for_eval)
 	clean_test_dataset = clean_test_builder.load(batch_size=batch_size)
 	corruption_types, _ = utils.load_corrupted_test_info(FLAGS.dataset)
-
-	# datasets_to_evaluate = {
-	# 	'clean': strategy.experimental_distribute_dataset(clean_test_dataset),
-	# }
+	datasets_to_evaluate = {
+		'clean': strategy.experimental_distribute_dataset(clean_test_dataset),
+	}
 	steps_per_eval = clean_test_builder.num_examples // batch_size
 	# steps_per_evals = [clean_test_builder.num_examples // batch_size]
 	test_datasets = {
 			# 'clean': strategy.experimental_distribute_dataset(clean_test_dataset),
 	}
-	data_dir = data_dir + "/cifar100_corrupted"
-	# steps_per_evals = [clean_test_builder.num_examples // batch_size, 2021 // batch_size, 2000 // batch_size]
+	# data_dir = data_dir + "/cifar100_corrupted"
+	# steps_per_evals = [2021 // batch_size, 2000 // batch_size]
 	# corruption_types = ["v4", "v6"]
 	# for corruption_type in corruption_types:
 	# 	dataset = ub.datasets.get(
@@ -282,26 +283,27 @@ def main(argv):
 	# 					data_dir=data_dir).load(batch_size=batch_size)
 	# 	datasets_to_evaluate[f'{corruption_type}'] = (
 	# 					strategy.experimental_distribute_dataset(dataset))
-	dataset = ub.datasets.get(
-						f'{FLAGS.dataset}_corrupted',
-						corruption_type=FLAGS.corruption_type,
-						data_dir=data_dir,
-						severity=FLAGS.severity,
-						split=tfds.Split.TEST).load(
-								batch_size=batch_size)
-	test_datasets[f'{FLAGS.corruption_type}_{FLAGS.severity}'] = (
-						strategy.experimental_distribute_dataset(dataset))
 
-	# for corruption_type in corruption_types:
-	# 	for severity in range(1, 6):
-	# 		dataset = ub.datasets.get(
+	# dataset = ub.datasets.get(
 	# 					f'{FLAGS.dataset}_corrupted',
-	# 					corruption_type=corruption_type,
-	# 					severity=severity,
-	# 					split=tfds.Split.TEST,
-	# 					data_dir=data_dir).load(batch_size=batch_size)
-	# 		datasets_to_evaluate[f'{corruption_type}_{severity}'] = (
+	# 					corruption_type=FLAGS.corruption_type,
+	# 					data_dir=data_dir,
+	# 					severity=FLAGS.severity,
+	# 					split=tfds.Split.TEST).load(
+	# 							batch_size=batch_size)
+	# test_datasets[f'{FLAGS.corruption_type}_{FLAGS.severity}'] = (
 	# 					strategy.experimental_distribute_dataset(dataset))
+
+	for corruption_type in corruption_types:
+		for severity in range(1, 6):
+			dataset = ub.datasets.get(
+						f'{FLAGS.dataset}_corrupted',
+						corruption_type=corruption_type,
+						severity=severity,
+						split=tfds.Split.TEST,
+						data_dir=data_dir).load(batch_size=batch_size)
+			datasets_to_evaluate[f'{corruption_type}_{severity}'] = (
+						strategy.experimental_distribute_dataset(dataset))
 
 	seeds = tf.random.experimental.stateless_split(
 			[FLAGS.seed, FLAGS.seed + 1], 2)[:, 0]
@@ -316,7 +318,7 @@ def main(argv):
 				input_shape=(32, 32, 3),
 				depth=28,
 				width_multiplier=10,
-				num_classes=100,
+				num_classes=10,
 				l2=FLAGS.l2,
 				hps=_extract_hyperparameter_dictionary(),
 				seed=seeds[1])
@@ -345,8 +347,9 @@ def main(argv):
 		optimizer = tf.keras.optimizers.SGD(lr_schedule, momentum=1.0 - FLAGS.one_minus_momentum, nesterov=True)
 		checkpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
 		latest_checkpoint = tf.train.latest_checkpoint(FLAGS.output_dir)
+		latest_checkpoint = latest_checkpoint.replace("density_model", "checkpoint-10")
 		checkpoint.restore(latest_checkpoint)
-	
+
 	@tf.function
 	def test_density(iterator, num_steps):
 		"""Evaluation StepFn."""
@@ -380,7 +383,8 @@ def main(argv):
 			return probs, labels
 
 		probs = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
-		labels = tf.TensorArray(tf.int32, size=0, dynamic_size=True)
+		# labels = tf.TensorArray(tf.int32, size=0, dynamic_size=True)
+		labels = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
 		for _ in tf.range(tf.cast(num_steps, tf.int32)):
 			prob, label = strategy.run(step_fn, args=(next(iterator),))
 			probs = probs.write(probs.size(), prob)
@@ -416,56 +420,55 @@ def main(argv):
 			strategy.run(step_fn, args=(next(iterator),))
 	
 	train_iterator = iter(train_dataset)
-	density_model.load_weights('utils/out/flow_cifar100/density_model/density_model')
+	density_model.load_weights('checkpoints/density_softmax/cifar10/model10/density_model')
 	train_nll = test_density(train_iterator, steps_per_epoch)
 	train_nll = tf.reshape(train_nll,[-1])
 	x_max = tf.reduce_max(train_nll)
 	x_min = tf.reduce_min(train_nll)
 
 	# ood_type = "clean"
-	ood_type = f'{FLAGS.corruption_type}_{FLAGS.severity}'
-	datasets_to_evaluate = {ood_type: test_datasets[ood_type]}
+	# ood_type = f'{FLAGS.corruption_type}_{FLAGS.severity}'
+	# datasets_to_evaluate = {ood_type: test_datasets[ood_type]}
 	for dataset_name, test_dataset in datasets_to_evaluate.items():
 		test_iterator = iter(test_dataset)
 		probs, labels = save_2_plot(test_iterator, steps_per_eval)
 		probs = probs.numpy()
 		probs= probs.reshape((probs.shape[0] * probs.shape[1]), probs.shape[2])
 		labels = labels.numpy()
-		with open("out/tmp_cifar100/density_softmax/" + ood_type + "_probs.pkl", "wb") as fp:
+		with open("out/density_softmax/cifar10/model10/" + dataset_name + "_probs.pkl", "wb") as fp:
 			pickle.dump(probs, fp)
-		with open("out/tmp_cifar100/density_softmax/" + ood_type + "_labels.pkl", "wb") as fp:
+		with open("out/density_softmax/cifar10/model10/" + dataset_name + "_labels.pkl", "wb") as fp:
 			pickle.dump(labels.ravel(), fp)
-	
-	quit()
-	cAcc, cECE, cNLL = [], [], []
-	idx = 0
-	for dataset_name, test_dataset in datasets_to_evaluate.items():
-		test_iterator = iter(test_dataset)
-		logging.info('Testing on dataset %s', dataset_name)
 
-		test_start_time = time.time()
-		test_step(test_iterator, 'test', dataset_name, steps_per_evals[0], x_max, x_min)
-		ms_per_example = (time.time() - test_start_time) * 1e6 / batch_size
-		logging.info('Test NLL: %.4f, Accuracy: %.2f%%, ECE: %.4f',
-								 metrics['test/negative_log_likelihood'].result(),
-								 metrics['test/accuracy'].result() * 100,
-								 metrics['test/ece'].result()['ece'],)
-		if dataset_name != 'clean':
-			cNLL.append(metrics['test/negative_log_likelihood'].result())
-			cAcc.append(metrics['test/accuracy'].result() * 100)
-			cECE.append(metrics['test/ece'].result()['ece'])
+	# cAcc, cECE, cNLL = [], [], []
+	# idx = 0
+	# for dataset_name, test_dataset in datasets_to_evaluate.items():
+	# 	test_iterator = iter(test_dataset)
+	# 	logging.info('Testing on dataset %s', dataset_name)
 
-		for metric in metrics.values():
-			metric.reset_states()
+	# 	test_start_time = time.time()
+	# 	test_step(test_iterator, 'test', dataset_name, steps_per_evals[idx], x_max, x_min)
+	# 	ms_per_example = (time.time() - test_start_time) * 1e6 / batch_size
+	# 	logging.info('Test NLL: %.4f, Accuracy: %.2f%%, ECE: %.4f',
+	# 							 metrics['test/negative_log_likelihood'].result(),
+	# 							 metrics['test/accuracy'].result() * 100,
+	# 							 metrics['test/ece'].result()['ece'],)
+	# 	if dataset_name != 'clean':
+	# 		cNLL.append(metrics['test/negative_log_likelihood'].result())
+	# 		cAcc.append(metrics['test/accuracy'].result() * 100)
+	# 		cECE.append(metrics['test/ece'].result()['ece'])
+
+	# 	for metric in metrics.values():
+	# 		metric.reset_states()
 		
-		idx += 1
+	# 	idx += 1
 
-	cNLL = np.asarray(cNLL)
-	cAcc = np.asarray(cAcc)
-	cECE = np.asarray(cECE)
-	print(np.mean(cNLL))
-	print(np.mean(cAcc))
-	print(np.mean(cECE))
-
+	# cNLL = np.asarray(cNLL)
+	# cAcc = np.asarray(cAcc)
+	# cECE = np.asarray(cECE)
+	# print(np.mean(cNLL))
+	# print(np.mean(cAcc))
+	# print(np.mean(cECE))
+	
 if __name__ == '__main__':
 	app.run(main)

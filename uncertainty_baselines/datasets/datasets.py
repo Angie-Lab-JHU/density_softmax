@@ -28,6 +28,7 @@ from uncertainty_baselines.datasets.base import BaseDataset
 from uncertainty_baselines.datasets.cifar import Cifar100Dataset
 from uncertainty_baselines.datasets.cifar import Cifar10CorruptedDataset
 from uncertainty_baselines.datasets.cifar import Cifar10Dataset
+from uncertainty_baselines.datasets.cifar import Cifar101Dataset
 from uncertainty_baselines.datasets.cifar import Cifar10NDataset
 from uncertainty_baselines.datasets.cifar import Cifar100NDataset
 from uncertainty_baselines.datasets.cifar100_corrupted import Cifar100CorruptedDataset
@@ -90,6 +91,7 @@ DATASETS = {
     'aptos': APTOSDataset,
     'cifar100': Cifar100Dataset,
     'cifar10': Cifar10Dataset,
+    'cifar10_1': Cifar101Dataset,
     'cifar10n': Cifar10NDataset,
     'cifar100n': Cifar100NDataset,
     'cifar10_corrupted': Cifar10CorruptedDataset,

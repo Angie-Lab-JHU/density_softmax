@@ -39,7 +39,7 @@ import pickle
 from tensorflow import keras
 from tensorflow.keras import regularizers
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 flags.DEFINE_float('label_smoothing', 0., 'Label smoothing parameter in [0,1].')
 flags.register_validator('label_smoothing',
@@ -238,19 +238,19 @@ class RealNVP(keras.Model):
 		log_likelihood = self.distribution.log_prob(y) + logdet
 		return log_likelihood
 
+# def rescale(X, x_min, x_max, y_min = -0.4, y_max = -0.3):
 def rescale(X, x_min, x_max, y_min = -0.55, y_max = -0.45):
-	if FLAGS.dataset == "cifar100":
-		y_min, y_max = -0.4, -0.3
-	X = (X - x_min) / (x_max - x_min)
-	X = X * (y_max - y_min)
-	X = X + y_min
-	return tf.cast(X, tf.float64)
+  X = (X - x_min) / (x_max - x_min)
+  X = X * (y_max - y_min)
+  X = X + y_min
+  return tf.cast(X, tf.float64)
 
 def rescale_normal(X, x_min, x_max, y_min = -1, y_max = 0):
-	X = (X - x_min) / (x_max - x_min)
-	X = X * (y_max - y_min)
-	X = X + y_min
-	return tf.cast(X, tf.float64)
+  X = (X - x_min) / (x_max - x_min)
+  X = X * (y_max - y_min)
+  X = X + y_min
+  return tf.cast(X, tf.float64)
+
 
 def main(argv):
 	fmt = '[%(filename)s:%(lineno)s] %(message)s'
@@ -324,8 +324,8 @@ def main(argv):
 	clean_test_builder = ub.datasets.get(
 	  FLAGS.dataset,
 			split=tfds.Split.TEST,
-	  data_dir=data_dir,
-	  drop_remainder=FLAGS.drop_remainder_for_eval)
+      data_dir=data_dir,
+      drop_remainder=FLAGS.drop_remainder_for_eval)
 	clean_test_dataset = clean_test_builder.load(batch_size=batch_size)
 	test_datasets = {
 			'clean': strategy.experimental_distribute_dataset(clean_test_dataset),
@@ -480,8 +480,10 @@ def main(argv):
 				# Index 0 at augmix processing is the unperturbed image.
 				# We take just 1 augmented image from the returned augmented images.
 				images = images[:, 1, ...]
-			with tf.GradientTape() as tape:
-				logits = model(images, training=True)
+			with tf.GradientTape(persistent=True) as tape:
+				tape.watch(images)
+				latents = encoder(images, training=True)
+				logits = classifer(latents, training=True)
 				if FLAGS.label_smoothing == 0.:
 					negative_log_likelihood = tf.reduce_mean(
 							tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True))
@@ -494,7 +496,13 @@ def main(argv):
 									from_logits=True,
 									label_smoothing=FLAGS.label_smoothing))
 				l2_loss = sum(model.losses)
-				loss = negative_log_likelihood + l2_loss
+				grad = tape.gradient(latents, images)
+				grad_norm = tf.sqrt(tf.reduce_sum(grad ** 2, axis = [1, 2, 3]))
+				jacob_loss = 1e-4 * tf.reduce_mean(((grad_norm - 1) ** 2))
+				# CIFAR-100
+				# jacob_loss = 1e-5 * tf.reduce_mean(((grad_norm - 1) ** 2))
+				
+				loss = negative_log_likelihood + l2_loss + jacob_loss
 				# Scale the loss given the TPUStrategy will reduce sum all gradients.
 				scaled_loss = loss / strategy.num_replicas_in_sync
 
@@ -822,7 +830,7 @@ def main(argv):
 			logging.info('Saved checkpoint to %s', checkpoint_name)
 
 	final_checkpoint_name = checkpoint.save(
-	  os.path.join(FLAGS.output_dir, 'checkpoint'))
+      os.path.join(FLAGS.output_dir, 'checkpoint'))
 	logging.info('Saved last checkpoint to %s', final_checkpoint_name)
 	with summary_writer.as_default():
 		hp.hparams({
@@ -848,6 +856,9 @@ def main(argv):
 		logging.info('Train Loss: %.4f, Accuracy: %.2f%%',
 								 metrics['normalize/loss'].result(),
 								 metrics['normalize/accuracy'].result() * 100)
+	final_checkpoint_name = checkpoint.save(
+      os.path.join(FLAGS.output_dir, 'checkpoint'))
+	logging.info('Saved last checkpoint to %s', final_checkpoint_name)
 	
 	datasets_to_evaluate = {'clean': test_datasets['clean']}
 	for dataset_name, test_dataset in datasets_to_evaluate.items():
@@ -860,4 +871,3 @@ def main(argv):
 
 if __name__ == '__main__':
 	app.run(main)
-	

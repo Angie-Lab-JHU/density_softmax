@@ -38,7 +38,7 @@ flags.DEFINE_integer('batch_repetitions', 4, 'Number of times an example is'
                      'lower variance gradients and increased training time.')
 
 # OOD flags.
-flags.DEFINE_bool('eval_on_ood', True,
+flags.DEFINE_bool('eval_on_ood', False,
                   'Whether to run OOD evaluation on specified OOD datasets.')
 flags.DEFINE_list('ood_dataset', 'cifar100,svhn_cropped',
                   'list of OOD datasets to evaluate on.')

@@ -47,7 +47,7 @@ import utils  # local file import from baselines.cifar
 
 from tensorflow import keras
 from tensorflow.keras import regularizers
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # os.environ['TF_ENABLE_ONEDNN_OPTS'] = "1"
 # os.environ['TF_ENABLE_MKL_NATIVE_FORMAT'] = "1" 
 
@@ -269,7 +269,7 @@ def main(argv):
 			split=tfds.Split.TEST, use_bfloat16=FLAGS.use_bfloat16, data_dir=data_dir)
 	test_dataset = test_builder.load(batch_size=batch_size, strategy=strategy)
 	test_datasets = {
-	  'clean': test_dataset
+	#   'clean': test_dataset
   	}
 	corruption_types, max_severity = utils.load_corrupted_test_info()
 	dataset_name = '{0}_{1}'.format(FLAGS.corruption_type, FLAGS.severity)
@@ -279,8 +279,8 @@ def main(argv):
 		use_bfloat16=FLAGS.use_bfloat16,
 		download_data=True,
 		data_dir=data_dir)
-	# test_datasets[dataset_name] = corrupted_builder.load(
-	# 	batch_size=batch_size, strategy=strategy)
+	test_datasets[dataset_name] = corrupted_builder.load(
+		batch_size=batch_size, strategy=strategy)
 
 	steps_per_test_eval = IMAGENET_VALIDATION_IMAGES // batch_size
 	validation_dataset = None
@@ -306,7 +306,7 @@ def main(argv):
 		model = ub.models.resnet50_deterministic(input_shape=IMAGE_SHAPE,
 																						 num_classes=NUM_CLASSES)
 		density_model = RealNVP(num_coupling_layers=2, input_dim = 2048)
-		density_model.load_weights('utils/out/imagenet/density_model/density_model')
+		density_model.load_weights('checkpoints//density_softmax/imagenet/model2/density_model')
 		encoder = tf.keras.Model(model.input, model.get_layer('avg_pool').output)
 		classifer = tf.keras.Model(model.get_layer('fc1000').input, model.get_layer('fc1000').output)
 		logging.info('Model input shape: %s', model.input_shape)
@@ -328,7 +328,6 @@ def main(argv):
 		optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate,
 																				momentum=1.0 - FLAGS.one_minus_momentum,
 																				nesterov=True)
-		density_optimizer = tf.keras.optimizers.Adam(1e-4)
 		metrics = {
 				'train/negative_log_likelihood': tf.keras.metrics.Mean(),
 				'train/accuracy': tf.keras.metrics.SparseCategoricalAccuracy(),
@@ -353,18 +352,8 @@ def main(argv):
 
 		checkpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
 		latest_checkpoint = tf.train.latest_checkpoint(FLAGS.output_dir)
-		initial_epoch = 0
-		if latest_checkpoint:
-			# checkpoint.restore must be within a strategy.scope() so that optimizer
-			# slot variables are mirrored.
-			checkpoint.restore(latest_checkpoint)
-			logging.info('Loaded checkpoint %s', latest_checkpoint)
-			initial_epoch = optimizer.iterations.numpy() // steps_per_epoch
-
-	summary_writer = tf.summary.create_file_writer(
-			os.path.join(FLAGS.output_dir, 'summaries'))
-
-
+		latest_checkpoint = latest_checkpoint.replace("density_model", "checkpoint-4")
+		checkpoint.restore(latest_checkpoint)
 
 	def compute_loss(density_model, x):
 		y, logdet = density_model(x)
@@ -424,16 +413,28 @@ def main(argv):
 		for _ in tf.range(tf.cast(steps_per_eval, tf.int32)):
 			strategy.run(step_fn, args=(next(iterator),))
 
-	train_iterator = iter(train_dataset)
-	train_nll = test_density(train_iterator, steps_per_epoch)
-	train_nll = tf.reshape(train_nll,[-1])
-	x_max = tf.reduce_max(train_nll)
-	x_min = tf.reduce_min(train_nll)
+	# train_iterator = iter(train_dataset)
+	# train_nll = test_density(train_iterator, steps_per_epoch)
+	# train_nll = tf.reshape(train_nll,[-1])
+	# x_max = tf.reduce_max(train_nll)
+	# x_min = tf.reduce_min(train_nll)
+
+	# x_min = -134275530000000.0
+	# x_max = -148.521
+	
+	x_min = -5534.878
+	x_max = -221.95312
+	# print(x_min)
+	# print(x_max)
 	cAcc, cECE, cNLL = [], [], []
-	# with open('out.npy', 'rb') as f:
-	# 	cNLL = np.load(f).tolist()
-	# 	cAcc = np.load(f).tolist()
-	# 	cECE = np.load(f).tolist()
+	with open('out.npy', 'rb') as f:
+		cNLL = np.load(f).tolist()
+		cAcc = np.load(f).tolist()
+		cECE = np.load(f).tolist()
+	# print(cNLL)
+	# print(cAcc)
+	# print(cECE)
+	# exit()
 	
 	for dataset_name, test_dataset in test_datasets.items():
 		test_iterator = iter(test_dataset)
@@ -462,17 +463,10 @@ def main(argv):
 	print(cAcc)
 	print(cECE)
 
-	# with open('out.npy', 'wb') as f:
-	# 	np.save(f, cNLL)
-	# 	np.save(f, cAcc)
-	# 	np.save(f, cECE)
-	
-	# density_model.load_weights('utils/out/cifar100/density_model/density_model')
-	# for epoch in range(0, 10):
-	# 		train_density(train_iterator)
-	# 		print("Density Loss: " + str(metrics['train/density_loss'].result()))
-	# density_model.save_weights('utils/out/imagenet/density_model/density_model')
-
+	with open('out.npy', 'wb') as f:
+		np.save(f, cNLL)
+		np.save(f, cAcc)
+		np.save(f, cECE)
 
 if __name__ == '__main__':
 	app.run(main)

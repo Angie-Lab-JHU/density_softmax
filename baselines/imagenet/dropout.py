@@ -41,7 +41,7 @@ flags.DEFINE_float('dropout_rate', 0.05, 'Dropout rate.')
 flags.DEFINE_bool(
     'filterwise_dropout', True, 'Dropout whole convolutional'
     'filters instead of individual values in the feature map.')
-flags.DEFINE_integer('num_dropout_samples', 4,
+flags.DEFINE_integer('num_dropout_samples', 10,
                      'Number of dropout samples to use for prediction.')
 
 flags.DEFINE_string('data_dir', None, 'Path to training and testing data.')

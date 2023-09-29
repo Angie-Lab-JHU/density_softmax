@@ -35,7 +35,7 @@ flags.DEFINE_float('fast_weight_lr_multiplier', 0.5,
                    'fast weights lr multiplier.')
 
 # OOD flags.
-flags.DEFINE_bool('eval_on_ood', False,
+flags.DEFINE_bool('eval_on_ood', True,
                   'Whether to run OOD evaluation on specified OOD datasets.')
 flags.DEFINE_list('ood_dataset', 'cifar100,svhn_cropped',
                   'list of OOD datasets to evaluate on.')

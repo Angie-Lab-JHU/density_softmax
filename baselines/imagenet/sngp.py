@@ -70,11 +70,11 @@ flags.DEFINE_string('output_dir', '/tmp/imagenet',
                     'The directory where the model weights and '
                     'training/evaluation summaries are stored.')
 flags.DEFINE_integer('train_epochs', 90, 'Number of training epochs.')
-flags.DEFINE_integer('corruptions_interval', -1,
+flags.DEFINE_integer('corruptions_interval', 90,
                      'Number of epochs between evaluating on the corrupted '
                      'test data. Use -1 to never evaluate.')
 flags.DEFINE_integer(
-    'checkpoint_interval', 1,
+    'checkpoint_interval', -1,
     'Number of epochs between saving checkpoints. Use -1 to '
     'only save the last checkpoints.')
 flags.DEFINE_string('alexnet_errors_path', None,

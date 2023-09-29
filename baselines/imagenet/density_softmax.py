@@ -46,7 +46,7 @@ import tensorflow_probability as tfp
 
 from tensorflow import keras
 from tensorflow.keras import regularizers
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # os.environ['TF_ENABLE_ONEDNN_OPTS'] = "1"
 # os.environ['TF_ENABLE_MKL_NATIVE_FORMAT'] = "1" 
 
@@ -208,18 +208,6 @@ class RealNVP(keras.Model):
 		y, logdet = self(x)
 		log_likelihood = self.distribution.log_prob(y) + logdet
 		return log_likelihood
-
-def rescale(X, x_min, x_max, y_min = -0.34, y_max = -0.34):
-  X = (X - x_min) / (x_max - x_min)
-  X = X * (y_max - y_min)
-  X = X + y_min
-  return tf.cast(X, tf.float64)
-
-def rescale_normal(X, x_min, x_max, y_min = -1, y_max = 0):
-  X = (X - x_min) / (x_max - x_min)
-  X = X * (y_max - y_min)
-  X = X + y_min
-  return tf.cast(X, tf.float64)
 
 def main(argv):
 
@@ -404,9 +392,10 @@ def main(argv):
 			images = inputs['features']
 			labels = inputs['labels']
 
-			with tf.GradientTape() as tape:
-
-				logits = model(images, training=True)
+			with tf.GradientTape(persistent=True) as tape:
+				tape.watch(images)
+				latents = encoder(images, training=True)
+				logits = classifer(latents, training=True)
 				if FLAGS.use_bfloat16:
 					logits = tf.cast(logits, tf.float32)
 
@@ -423,8 +412,13 @@ def main(argv):
 
 				l2_loss = FLAGS.l2 * 2 * tf.nn.l2_loss(
 						tf.concat(filtered_variables, axis=0))
+
+				grad = tape.gradient(latents, images)
+				grad_norm = tf.sqrt(tf.reduce_sum(grad ** 2, axis = [1, 2, 3]))
+				jacob_loss = 1e-1 * tf.reduce_mean(((grad_norm - 1) ** 2))
+
 				# Scale the loss given the TPUStrategy will reduce sum all gradients.
-				loss = negative_log_likelihood + l2_loss
+				loss = negative_log_likelihood + l2_loss + jacob_loss
 				scaled_loss = loss / strategy.num_replicas_in_sync
 
 			grads = tape.gradient(scaled_loss, model.trainable_variables)
@@ -620,6 +614,10 @@ def main(argv):
 			checkpoint_name = checkpoint.save(os.path.join(
 				FLAGS.output_dir, 'checkpoint'))
 			logging.info('Saved checkpoint to %s', checkpoint_name)
+
+	checkpoint_name = checkpoint.save(os.path.join(
+		FLAGS.output_dir, 'checkpoint'))
+	logging.info('Saved checkpoint to %s', checkpoint_name)
 
 	final_save_name = os.path.join(FLAGS.output_dir, 'model')
 	model.save(final_save_name)

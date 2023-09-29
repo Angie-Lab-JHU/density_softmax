@@ -29,7 +29,7 @@ import utils  # local file import from baselines.cifar
 from tensorboard.plugins.hparams import api as hp
 
 flags.DEFINE_float('dropout_rate', 0.1, 'Dropout rate.')
-flags.DEFINE_integer('num_dropout_samples', 4,
+flags.DEFINE_integer('num_dropout_samples', 30,
                      'Number of dropout samples to use for prediction.')
 flags.DEFINE_integer('num_dropout_samples_training', 1,
                      'Number of dropout samples for training.')
