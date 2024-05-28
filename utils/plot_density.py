@@ -25,41 +25,42 @@ import numpy as np
 # plt.savefig("predictive_entropy.png")
 
 
-with open("utils/out/flow_cifar10/plots/train_nll.pkl", "rb") as fp:
-    train_NLL = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/train_nll.pkl", "rb") as fp:
+#     train_NLL = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/test_nll.pkl", "rb") as fp:
-    test_in = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/test_nll.pkl", "rb") as fp:
+#     test_in = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/out_1_nll.pkl", "rb") as fp:
-    out_1_nll = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/out_1_nll.pkl", "rb") as fp:
+#     out_1_nll = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/out_2_nll.pkl", "rb") as fp:
-    out_2_nll = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/out_2_nll.pkl", "rb") as fp:
+#     out_2_nll = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/out_3_nll.pkl", "rb") as fp:
-    out_3_nll = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/out_3_nll.pkl", "rb") as fp:
+#     out_3_nll = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/out_4_nll.pkl", "rb") as fp:
-    out_4_nll = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/out_4_nll.pkl", "rb") as fp:
+#     out_4_nll = pickle.load(fp)
 
-with open("utils/out/flow_cifar10/plots/out_5_nll.pkl", "rb") as fp:
-    out_5_nll = pickle.load(fp)
+# with open("utils/out/flow_cifar10/plots/out_5_nll.pkl", "rb") as fp:
+#     out_5_nll = pickle.load(fp)
 
 # with open("../algorithms/VAE/results/plots/MNIST_1/te_out_nlls.pkl", "rb") as fp:
 #     test_zigzac = pickle.load(fp)
 
 bins = int(100 / 1)
-plt.xlabel("Likelihood value p(z)", fontsize=11)
-plt.ylabel("Normalized density", fontsize=11)
+plt.xlabel("Likelihood value p(z)", fontsize=18)
+plt.ylabel("Normalized density", fontsize=18)
 plt.xlim([0.4, 1])
-plt.hist(train_NLL, label="train", alpha=0.8,density=True, bins=bins)
-plt.hist(test_in, label="test_iid", alpha=0.8,density=True, bins=bins)
-plt.hist(out_1_nll, label="ood_1", alpha=0.8,density=True, bins=bins)
-plt.hist(out_2_nll, label="ood_2",alpha=0.8, density=True, bins=bins)
-plt.hist(out_3_nll, label="ood_3", alpha=0.8,density=True, bins=bins)
-plt.hist(out_4_nll, label="ood_4", alpha=0.8,density=True, bins=bins)
-plt.hist(out_5_nll, label="ood_5",alpha=0.8, density=True, bins=bins)
-plt.legend()
+plt.ylim([0, 13.5])
+plt.hist([], label="train", alpha=0.8,density=True, bins=bins)
+plt.hist([], label="test_iid", alpha=0.8,density=True, bins=bins)
+plt.hist([], label="ood_1", alpha=0.8,density=True, bins=bins)
+plt.hist([], label="ood_2",alpha=0.8, density=True, bins=bins)
+plt.hist([], label="ood_3", alpha=0.8,density=True, bins=bins)
+plt.hist([], label="ood_4", alpha=0.8,density=True, bins=bins)
+plt.hist([], label="ood_5",alpha=0.8, density=True, bins=bins)
+plt.legend(fontsize=14, loc='upper left')
 plt.tight_layout()
 plt.savefig("cifar-10-density_histogram.pdf")

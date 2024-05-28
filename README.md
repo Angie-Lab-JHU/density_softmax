@@ -1,6 +1,6 @@
 # density_softmax
 ## <a name="demo"></a> Quick Demo
-Run [this Google Colab](https://colab.research.google.com/drive/1fdsAW_J4WKBFSTa3Hc2EDo_ZbjsoSle7?usp=sharing).
+Run [this Google Colab](https://colab.research.google.com/drive/1dqaacHzOHUPFhBDcUw7yGL-zv7GSG-8P?usp=sharing).
 
 or
 

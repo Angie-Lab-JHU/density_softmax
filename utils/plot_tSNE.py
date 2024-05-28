@@ -80,13 +80,13 @@ def make_model_diagrams(method, ax, softmaxes, labels, n_bins=15):
         edgecolor="r",
     )
     ax.plot([0, 1], [0, 1], "--", color="gray")
-    ax.legend([confs, gaps], ["Outputs", "Gap"], loc="best")
+    ax.legend([confs, gaps], ["Outputs", "Gap"], loc="best", size=14)
 
     ece = calculate_ece(softmaxes, labels)
 
-    ax.set_ylabel("Accuracy (P[y])", size=11)
-    ax.set_xlabel("Confidence", size=11)
-    ax.set_title(method, size=11)
+    ax.set_ylabel("Accuracy (P[y])", size=14)
+    ax.set_xlabel("Confidence", size=14)
+    ax.set_title(method, size=14)
 
     bbox_props = dict(boxstyle="round", fc="lightgrey", ec="brown", lw=2)
     ax.text(0.15, 0.95, "ECE: {:.2f}".format(ece), ha="center", va="center", size=11, weight="bold", bbox=bbox_props)
@@ -96,9 +96,9 @@ def plot_TNSE(method, ax, X_2d_tr, tr_labels, label_target_names, acc):
     for i, label in zip(range(len(label_target_names)), label_target_names):
         ax.scatter(X_2d_tr[tr_labels == i, 0], X_2d_tr[tr_labels == i, 1], c=colors[i], marker=".", label=label)
     
-    ax.set_ylabel("Principal Component 2", size=11)
-    ax.set_xlabel("Principal Component 1", size=11)
-    ax.set_title(method, size=11)
+    ax.set_ylabel("Principal Component 2", size=14)
+    ax.set_xlabel("Principal Component 1", size=14)
+    ax.set_title(method, size=14)
 
     bbox_props = dict(boxstyle="round", fc="lightgrey", ec="brown", lw=2)
     ax.text(0.15, 0.95, "Acc: {:.1f}".format(acc), size=11, weight="bold", bbox=bbox_props, ha='center', va='center', transform=ax.transAxes)
@@ -112,21 +112,21 @@ def unique(list1):
 
 tsne_model = TSNE(n_components=2, init="pca")
 
-with open("tSNE/ds/defocus_blur_5_probs.pkl", "rb") as fp:
+with open("out/tSNE/ds/defocus_blur_5_probs.pkl", "rb") as fp:
 	latents = pickle.load(fp)
 
-with open("tSNE/ds/defocus_blur_5_labels.pkl", "rb") as fp:
+with open("out/tSNE/ds/defocus_blur_5_labels.pkl", "rb") as fp:
 	labels = pickle.load(fp)
 
-Z_2d_erm = tsne_model.fit_transform(latents)
+# Z_2d_erm = tsne_model.fit_transform(latents)
 
-with open("tSNE/ds/shot_noise_1_probs.pkl", "rb") as fp:
+with open("out/tSNE/ds/shot_noise_1_probs.pkl", "rb") as fp:
 	latents = pickle.load(fp)
 
-with open("tSNE/ds/shot_noise_1_labels.pkl", "rb") as fp:
+with open("out/tSNE/ds/shot_noise_1_labels.pkl", "rb") as fp:
 	labels = pickle.load(fp)
 
-Z_2d_ds = tsne_model.fit_transform(latents)
+# Z_2d_ds = tsne_model.fit_transform(latents)
 
 label_target_names = unique(labels)
 
@@ -142,13 +142,14 @@ with open("out/deterministic/cifar10/model1/clean_probs.pkl", "rb") as fp:
 with open("out/deterministic/cifar10/model1/clean_labels.pkl", "rb") as fp:
 	wo_labels = pickle.load(fp)
 
-fig, axs = plt.subplots(1, 4, figsize = (16, 4), constrained_layout=True)
-plot_TNSE("Without 1-lipschitz", axs[0], Z_2d_erm, labels, label_target_names, 78.6)
-plot_TNSE("With 1-lipschitz", axs[1], Z_2d_ds, labels, label_target_names, 91.2)
-make_model_diagrams("Without Density", axs[2], wo_outputs, wo_labels)
-make_model_diagrams("With Density", axs[3], w_outputs, w_labels)
+# fig, axs = plt.subplots()
+fig, axs = plt.subplots(1, 1, figsize = (4, 4), constrained_layout=True)
+# plot_TNSE("Without 1-lipschitz", axs, Z_2d_erm, labels, label_target_names, 78.6)
+# plot_TNSE("With 1-lipschitz", axs, Z_2d_ds, labels, label_target_names, 91.2)
+# make_model_diagrams("Without Density", axs, wo_outputs, wo_labels)
+make_model_diagrams("With Density", axs, w_outputs, w_labels)
 
 plt.tight_layout()
 plt.savefig(
-    "out.pdf"
+    "out4.png"
 )

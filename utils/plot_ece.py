@@ -84,29 +84,29 @@ def make_model_diagrams(method, ax, softmaxes, labels, n_bins=15):
 
     ece = calculate_ece(softmaxes, labels)
 
-    ax.set_ylabel("Accuracy (P[y])", size=11)
-    ax.set_xlabel("Confidence", size=11)
-    ax.set_title(method, size=11)
+    ax.set_ylabel("Accuracy (P[y])", size=14)
+    ax.set_xlabel("Confidence", size=14)
+    ax.set_title(method, size=14)
 
     bbox_props = dict(boxstyle="round", fc="lightgrey", ec="brown", lw=2)
     ax.text(0.15, 0.95, "ECE: {:.2f}".format(ece), ha="center", va="center", size=11, weight="bold", bbox=bbox_props)
 
 
-with open("utils/out/flow_cifar10/plots/ood_probs_deterministic.pkl", "rb") as fp:
+with open("out/flow_cifar10/plots/ood_probs_deterministic.pkl", "rb") as fp:
     erm_outputs = pickle.load(fp)
-with open("utils/out/flow_cifar10/plots/ood_labels_deterministic.pkl", "rb") as fp:
+with open("out/flow_cifar10/plots/ood_labels_deterministic.pkl", "rb") as fp:
     erm_labels = pickle.load(fp)
-with open("utils/out/rank1_cifar10/plots/ood_probs.pkl", "rb") as fp:
+with open("out/rank1_cifar10/plots/ood_probs.pkl", "rb") as fp:
     rank1_outputs = pickle.load(fp)
-with open("utils/out/rank1_cifar10/plots/ood_labels.pkl", "rb") as fp:
+with open("out/rank1_cifar10/plots/ood_labels.pkl", "rb") as fp:
     rank1_labels = pickle.load(fp)
-with open("utils/out/ensemble_cifar10/plots/ood_probs.pkl", "rb") as fp:
+with open("out/ensemble_cifar10/plots/ood_probs.pkl", "rb") as fp:
     ensemble_outputs = pickle.load(fp)
-with open("utils/out/ensemble_cifar10/plots/ood_labels.pkl", "rb") as fp:
+with open("out/ensemble_cifar10/plots/ood_labels.pkl", "rb") as fp:
     ensemble_labels = pickle.load(fp)
-with open("utils/out/flow_cifar10/plots/ood_probs.pkl", "rb") as fp:
+with open("out/flow_cifar10/plots/ood_probs.pkl", "rb") as fp:
     density_softmax_outputs = pickle.load(fp)
-with open("utils/out/flow_cifar10/plots/ood_labels.pkl", "rb") as fp:
+with open("out/flow_cifar10/plots/ood_labels.pkl", "rb") as fp:
     density_softmax_labels = pickle.load(fp)
 
 # labels = labels.int()
@@ -122,5 +122,5 @@ make_model_diagrams("Density-Softmax", axs[3], density_softmax_outputs, density_
 # plt.title(method + "-" + test_type.lower(), size=30)
 plt.tight_layout()
 plt.savefig(
-    "out/ece.pdf"
+    "out/ece.png"
 )
